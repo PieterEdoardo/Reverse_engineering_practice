@@ -1,5 +1,5 @@
 # XORcist writeup
-Thanks to S3c_Cult for publishign this binary https://crackmes.one/crackme/684f47bd2b84be7ea774390e
+Thanks to S3c_Cult for publishing this binary https://crackmes.one/crackme/684f47bd2b84be7ea774390e
 
 ## Standard checks
 First off, running it.
