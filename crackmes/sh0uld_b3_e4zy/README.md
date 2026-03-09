@@ -66,7 +66,48 @@ So these are the things that need fixing.
 3. Better input validation.
 
 # Proposed solution
+My attempt was to patch the actual binary itself with Ghidra, but I couldn't figure out a good way to do it, that wouldn't also be bad itself. There aren't many bytes to work with because it's not just that the original logic has a fault, it's mostly missing. So I wasn't able to patch it without writing and compiling a new source code.
 
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+int main(void) {
+    char input_buffer[6];
+
+    char letter_1 = '\x61'; // 'a'
+    char letter_2 = '\x65'; // 'e'
+    char letter_3 = '\x69'; // 'i'
+    char letter_4 = '\x6f'; // 'o'
+    char letter_5 = '\x75'; // 'u'
+
+    char target[6] = {letter_1, letter_2, letter_3, letter_4, letter_5, '\0'};
+
+    puts("MAX INPT 5 CHARS");
+    printf("Enter Input: ");
+
+    int input_succeeded = scanf("%5s", input_buffer);
+
+    if (input_succeeded == 1) {
+        size_t input_length = strlen(input_buffer);
+
+        if (5 < (int)input_length) {
+            puts("INVALID INPUT!");
+            return 0;
+        }
+
+        if (strcmp(input_buffer, target) == 0) {
+            puts("Correct!");
+            return 0;
+        }
+    }
+
+    puts("INVALID INPUT!");
+    return 0;
+}
+```
 
 
 # Conclusion
+The original creator, cycrusader, should've structured the binary in such a way that there would be enough room to actually patch the binary without rewriting it. Fixing the binary to turn some of the dead code alive again and complete the logic would've been a great challenge for beginners like myself.
