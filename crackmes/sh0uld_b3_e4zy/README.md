@@ -4,7 +4,7 @@ This binary ws provided on crackmes.one by cycrusader https://crackmes.one/crack
 ## Context
 This binary was the second lowest rated challenge on the entire website, and this is in part because it just doesn't work. It doesn't even validate input. The comments also highlight this issue. But, since it has 0 write ups as of the time of writing, and, because the description of the binary was "Its easy to patch ;) try to reverse it!", I decided to patch it rather then solving it.
 
-# Bugs
+## Bugs
 Opening the code in Ghidra, it's clear straight away that there is a bunch of dead code.
 ```asm
 00101190 c7 45 d0        MOV        dword ptr [RBP + local_38],0x61
@@ -65,7 +65,7 @@ So these are the things that need fixing.
 2. Creating correct success and failure paths
 3. Better input validation.
 
-# Proposed solution
+## Proposed solution
 My attempt was to patch the actual binary itself with Ghidra, but I couldn't figure out a good way to do it, that wouldn't also be bad itself. There aren't many bytes to work with because it's not just that the original logic has a fault, it's mostly missing. So I wasn't able to patch it without writing and compiling a new source code.
 
 
@@ -129,5 +129,5 @@ Enter Input: aeiou
 Correct!
 ```
 
-# Conclusion
+## Conclusion
 Perhaps all this challenge needed was a more clear briefing, otherwise I would say that the author should've structured the binary in such a way that there would be enough room to actually patch the binary without rewriting it. Fixing the binary to turn some of the dead code alive again and complete the logic would've been a great challenge for beginners like myself.
