@@ -107,7 +107,27 @@ int main(void) {
     return 0;
 }
 ```
+My choices here were to retain the previous 5 letter 'password' in hexadecimal, and retain the rest of the flow. I did remove the `else`, since it wasn't needed anyways. The code is simple, but so is the challenge, and so was the original code. For the sake of satifying the requirements of a simple challenge it seems to work just fine.
 
+```
+~/Projects/RE/crackmes.one/sh0uld_b3_e4zy
+❯ ./e4zy_patched
+MAX INPT 5 CHARS
+Enter Input: 1
+INVALID INPUT!
+
+~/Projects/RE/crackmes.one/sh0uld_b3_e4zy
+❯ ./e4zy_patched
+MAX INPT 5 CHARS
+Enter Input: 111111111111
+INVALID INPUT!
+
+~/Projects/RE/crackmes.one/sh0uld_b3_e4zy 7s
+❯ ./e4zy_patched
+MAX INPT 5 CHARS
+Enter Input: aeiou
+Correct!
+```
 
 # Conclusion
-The original creator, cycrusader, should've structured the binary in such a way that there would be enough room to actually patch the binary without rewriting it. Fixing the binary to turn some of the dead code alive again and complete the logic would've been a great challenge for beginners like myself.
+Perhaps all this challenge needed was a more clear briefing, otherwise I would say that the author should've structured the binary in such a way that there would be enough room to actually patch the binary without rewriting it. Fixing the binary to turn some of the dead code alive again and complete the logic would've been a great challenge for beginners like myself.
