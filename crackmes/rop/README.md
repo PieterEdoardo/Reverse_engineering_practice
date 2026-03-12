@@ -87,3 +87,4 @@ All that happens here is write string, call `input()`, write string. Nothing her
         004005a6 c9              LEAVE
         004005a7 c3              RET
 ```
+Now here there's some stuff going on. I know that if we want to overflow anything, in theory, we have to give it more bytes of data than it reserved for the input buffer. Local_48 here is the input buffer, which has `0x40` aka 64 bytes. But, the `read()` has `0x280 as it's third argument. In the libc documentation it mentions that that's the maximum input that can be taken. `0x280` to decimal is `(2 * 16^2) + (8 * 16^1)` = 640. So, it takes 640 bytes of maximum input. This seems tailor fit for exploitation!
