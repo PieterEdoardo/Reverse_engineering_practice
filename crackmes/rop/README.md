@@ -88,3 +88,28 @@ All that happens here is write string, call `input()`, write string. Nothing her
         004005a7 c3              RET
 ```
 Now here there's some stuff going on. I know that if we want to overflow anything, in theory, we have to give it more bytes of data than it reserved for the input buffer. Local_48 here is the input buffer, which has `0x40` aka 64 bytes. But, the `read()` has `0x280 as it's third argument. In the libc documentation it mentions that that's the maximum input that can be taken. `0x280` to decimal is `(2 * 16^2) + (8 * 16^1)` = 640. So, it takes 640 bytes of maximum input. This seems tailor fit for exploitation!
+
+To start exploiting this vulnerability I first need to find the offset of the return adress of the current function. This way we can take over the control flow of the program. The stack should generally look like this:
+```
+[  64 bytes: local_48 buffer  ]
+[   8 bytes: saved RBP        ]
+[   8 bytes: return address   ]
+```
+So 72 bytes (64 buffer + 8 saved RBP) for our overflow, and the actual exploit payload starts at 73, I assume.
+
+Now, as the last part of the recon, I need to confirm this expectation.
+
+## Exploitation
+
+In this scenario, I have three options:
+* ret2plt — call system@plt if it's linked, passing /bin/sh
+* ret2libc — leak a libc address, calculate system and /bin/sh offsets, then call them
+* syscall ROP — set up registers manually and call execve via syscall number 59
+
+To go for ret2plt `system` and `/bin/sh` have to be present already.
+
+```
+~/Projects/RE/crackmes.one/rop
+❯ objdump -d ./rop | grep -i system
+```
+No results, so it's likely ret2libc.
