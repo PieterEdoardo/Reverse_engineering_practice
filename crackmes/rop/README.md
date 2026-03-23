@@ -108,7 +108,7 @@ gdb ./rop
 ```
 But on this system I run fish shell which doesn't support `<(` So I have to write it do a file first:
 ```
-~/Projects/RE/crackmes.one/rop 3m 13s
+~/Projects/RE/crackmes.one/rop
 ❯ python3 -c "import sys; sys.stdout.buffer.write(b'A'*72 + b'B'*8)" > /tmp/payload.bin
 
 ~/Projects/RE/crackmes.one/rop
