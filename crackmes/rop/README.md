@@ -106,7 +106,7 @@ gdb ./rop
 
 (gdb) x/gx $rsp
 ```
-But i run fish shell which doesn't support `<(` So I have to write it do a file first:
+But on this system I run fish shell which doesn't support `<(` So I have to write it do a file first:
 ```
 ~/Projects/RE/crackmes.one/rop 3m 13s
 ❯ python3 -c "import sys; sys.stdout.buffer.write(b'A'*72 + b'B'*8)" > /tmp/payload.bin
