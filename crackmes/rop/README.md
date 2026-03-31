@@ -87,6 +87,12 @@ All that happens here is write string, call `input()`, write string. Nothing her
         004005a6 c9              LEAVE
         004005a7 c3              RET
 ```
+### Program Assumptions
+This program's logic and it was written with a couple of assumptions during it's use.
+1. It assumes all input is equal or lower to 64 bytes.
+2. It assumes after input is taken, the program will exit right away.
+3. It assumes given input will be completely valid, as it does no input validation whatsoever.
+
 Now here there's some stuff going on. I know that if we want to overflow anything, in theory, we have to give it more bytes of data than it reserved for the input buffer. Local_48 here is the input buffer, which has `0x40` aka 64 bytes. But, the `read()` has `0x280 as it's third argument. In the libc documentation it mentions that that's the maximum input that can be taken. `0x280` to decimal is `(2 * 16^2) + (8 * 16^1)` = 640. So, it takes 640 bytes of maximum input. This seems tailor fit for exploitation!
 
 To start exploiting this vulnerability I first need to find the offset of the return adress of the current function. This way we can take over the control flow of the program. The stack should generally look like this:
