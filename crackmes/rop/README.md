@@ -189,7 +189,7 @@ print(f"Leaked ({len(leaked)} bytes): {leaked.hex()}")
 
 I based this on the results of an `objdump` I did looking for `"__libc_csu_init"`
 ```
-~/Projects/RE/crackmes.one/rop 3m 22s
+~/Projects/RE/crackmes.one/rop
 ❯ objdump -d ./rop | grep -A 30 "__libc_csu_init"
 00000000004005b0 <__libc_csu_init>:
   4005b0:       41 57                   push   %r15
@@ -259,7 +259,7 @@ pop    %r14
 pop    %r15
 ret
 ```
-For my leak script, I used gadget 2. This is the results:
+For my leak script, I used both gadgets. Gadget 1 at `0x40060a` to load the registers via the pop sequence, and gadget 2 at 0x4005f0 to execyte the call. These are the results:
 ```
 ~/Projects/RE/crackmes.one/rop
 ❯ python leak.py
@@ -285,7 +285,7 @@ print(hex(write_libc))
 ❯ python translate_libc.py
 0x7f027fd0dde0
 ```
-Amazing! Our libc address is `0xe0ddd07f027f0000`! Now, this only proves our exploit so far works, because this address is different every runtime as libc does not live inside our binary. Because of this, the entire script will have to be a single big exploit doing all steps at once. Every function inside of libc lives at a fixed offset of our libc address, which never changes within a given libc version.
+Amazing! Our libc address is `0x7f027fd0dde0`! Now, this only proves our exploit so far works, because this address is different every runtime as libc does not live inside our binary. Because of this, the entire script will have to be a single big exploit doing all steps at once. Every function inside of libc lives at a fixed offset of our libc address, which never changes within a given libc version.
 ```
 ~/Projects/RE/crackmes.one/rop
 ❯ ldd ./rop
