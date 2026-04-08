@@ -242,15 +242,15 @@ Disassembly of section .fini:
   40062c:       c3                      ret
 
 ```
-Hiding in here are 2 beautiful gadgets, at address `0x4005f0` and `0x40060a` respectively. Giving us the reusable pieces of code:
+Hiding in here are 2 beautiful gadgets, at address `0x40060a` and `0x4005f0` respectively. Giving us the reusable pieces of code:
 ```
-// Gadget 1 at 0x4005f0
+// Gadget 1 at 0x40060a
 mov    %r15,%rdx
 mov    %r14,%rsi
 ov    %r13d,%edi
 call   *(%r12,%rbx,8)
 
-// Gadget 2 at 0x40060a
+// Gadget 2 at 0x4005f0
 pop    %rbx
 pop    %rbp
 pop    %r12
@@ -259,7 +259,7 @@ pop    %r14
 pop    %r15
 ret
 ```
-For my leak script, I used both gadgets. Gadget 1 at `0x40060a` to load the registers via the pop sequence, and gadget 2 at 0x4005f0 to execyte the call. These are the results:
+For my leak script, I used both gadgets. Gadget 1 at `0x40060a` to load the registers via the pop sequence, and gadget 2 at 0x4005f0 to execute the call. These are the results:
 ```
 ~/Projects/RE/crackmes.one/rop
 ❯ python leak.py
