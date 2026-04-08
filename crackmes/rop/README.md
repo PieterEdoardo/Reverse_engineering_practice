@@ -102,9 +102,7 @@ To start exploiting this vulnerability I first need to find the offset of the re
 [   8 bytes: saved RBP        ]
 [   8 bytes: return address   ]
 ```
-So 72 bytes (64 buffer + 8 saved RBP) for our overflow, and the actual exploit payload starts at 73, I assume.
-
-Now, as the last part of the recon, I need to confirm this expectation. An elegant way of doing it is by running:
+So 72 bytes (64 buffer + 8 saved RBP) for our overflow, and the actual exploit payload starts at 73, I expect. Now, as the last part of the recon, I need to confirm this expectation empirically. An elegant way of doing it is by running:
 ```
 gdb ./rop
 (gdb) run < <(python3 -c "print('A'*72 + 'B'*8)")
