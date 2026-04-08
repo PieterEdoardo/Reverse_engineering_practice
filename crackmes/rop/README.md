@@ -254,7 +254,7 @@ ret
 // Gadget 2 at 0x4005f0
 mov    %r15,%rdx
 mov    %r14,%rsi
-ov    %r13d,%edi
+mov    %r13d,%edi
 call   *(%r12,%rbx,8)
 ```
 For my leak script, I used both gadgets. Gadget 1 at `0x40060a` to load the registers via the pop sequence, and gadget 2 at 0x4005f0 to execute the call. These are the results:
