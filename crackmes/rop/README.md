@@ -86,7 +86,7 @@ All that happens here is write string, call `input()`, write string. Nothing her
 Right here, seems to be where the likely overflow happens.
 
 ### Program Assumptions
-This program's logic and it was written with a couple of assumptions during it's use.
+This program's logic was written with a couple of assumptions during it's use.
 1. It assumes all input is equal or lower to 64 bytes.
 2. It assumes after input is taken, the program will exit right away.
 3. It assumes given input will be completely valid, as it does no input validation whatsoever.
